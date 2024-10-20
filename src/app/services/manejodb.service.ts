@@ -1344,31 +1344,41 @@ obtenerIdUsuarioLogueado() {
   //listar todos los items de venta en el carrito, por usuario conectado
   //elparametro a usar es el id del usuario en sesion, de esta forma, se traeran los carros
   //de los usuarios conectados
-  async obtenerCarroPorUsuario(id_usuario: number): Promise<any[]> {
-    return this.database.executeSql('SELECT d.id_detalle, d.cantidad, d.subtotal, d.id_venta, d.id_producto FROM detalle d INNER JOIN venta v ON d.id_venta = v.id_venta INNER JOIN usuario u ON v.id_usuario = u.id_usuario WHERE u.id_usuario = ?', [id_usuario]).then(res => {
-      //variable para almacenar el resultado de la consulta
-      let itemsD: Detallesventa[] = [];
-      //verificar si hay registros en la consulta
-      if (res.rows.length > 0) {
-        //se recorren los resultados
-        for (var i = 0; i < res.rows.length; i++) {
-          //se agrega el registro a mi variable (itemsU)
-          itemsD.push({
-            id_detalle: res.rows.item(i).id_detalle,
-            cantidad: res.rows.item(i).cantidad,
-            subtotal: res.rows.item(i).subtotal,
-            id_venta: res.rows.item(i).id_venta,
-            id_producto: res.rows.item(i).id_producto
-          })
-        }
+  async obtenerCarroPorUsuario(idVenta: number): Promise<any[]> {
+    const query = `
+      SELECT 
+        d.id_detalle, 
+        d.cantidad_d, 
+        d.subtotal,
+        p.nombre_prod, 
+        p.foto_prod,  
+        d.id_venta, 
+        d.id_producto 
+      FROM detalle d
+      INNER JOIN producto p ON d.id_producto = p.id_producto
+      INNER JOIN venta v ON d.id_venta = v.id_venta
+      WHERE d.id_venta = ?;
+    `;
+  
+    try {
+      const res = await this.database.executeSql(query, [idVenta]);
+      const itemsD: any[] = [];
+  
+      for (let i = 0; i < res.rows.length; i++) {
+        itemsD.push(res.rows.item(i));
       }
-      this.listadoDetalle_carrito.next(itemsD as any);
+  
       return itemsD;
-    })
+    } catch (error) {
+      this.alertasService.presentAlert('Error al obtener los detalles de la venta:','errors: ' + JSON.stringify(error));
+      return [];
+    }
   }
 
+
   //select V2.0
-  async obtenerDetallesVenta(idVenta: number): Promise<any[]> {
+  /*
+  async obtenerDetallesVenta(idVenta: number): Promise<Detallesventa[]> {
     const query = `
       SELECT p.nombre_prod AS nombre, p.precio_prod AS precio, d.cantidad, p.foto_prod AS imagen
       FROM detalle d
@@ -1378,7 +1388,7 @@ obtenerIdUsuarioLogueado() {
   
     try {
       const res = await this.database.executeSql(query, [idVenta]);
-      const productos: any[] = [];
+      const productos: Detallesventa[] = [];
       for (let i = 0; i < res.rows.length; i++) {
         productos.push(res.rows.item(i));
       }
@@ -1387,32 +1397,37 @@ obtenerIdUsuarioLogueado() {
       console.error('Error al obtener los detalles de la venta:', error);
       return [];
     }
-  }
+  } */
 
 
   //verifica que la venta exista con ese usuario
-  async verificarVentaActiva(idUsuario: number): Promise<number | null> {
-    const query = `
+  async verificarOCrearVenta(idUsuario: number): Promise<number> {
+    const queryVerificar = `
       SELECT id_venta 
       FROM venta 
       WHERE id_usuario = ? AND id_estado = 1;
     `;
-  
+    
     try {
-      const res = await this.database.executeSql(query, [idUsuario]);
+      const res = await this.database.executeSql(queryVerificar, [idUsuario]);
+      
       if (res.rows.length > 0) {
-        return res.rows.item(0).id_venta;  // Retorna el ID de la venta activa
+        const idVenta = res.rows.item(0).id_venta;
+        console.log('Venta activa encontrada con ID:', idVenta);
+        return idVenta;  // Retorna el ID de la venta activa
+      } else {
+        console.log('No se encontró venta activa, creando una nueva...');
+        return await this.crearVenta(idUsuario);  // Crea una nueva venta si no existe
       }
-      return null;  // No hay venta activa
     } catch (error) {
-      console.error('Error al verificar la venta activa:', error);
-      return null;
+      console.error('Error al verificar o crear la venta:', error);
+      throw error;  // Lanza el error para ser manejado en otro lugar
     }
   }
-
-  //crea la venta si es que no existe con ese usuario
+  
+  // Función para crear una nueva venta
   async crearVenta(idUsuario: number): Promise<number> {
-    const query = `
+    const queryCrear = `
       INSERT INTO venta (fecha_venta, total, estado_retiro, id_usuario, id_estado) 
       VALUES (?, ?, ?, ?, ?);
     `;
@@ -1420,20 +1435,22 @@ obtenerIdUsuarioLogueado() {
     const params = [fechaHoy, 0, 0, idUsuario, 1];  // Estado = 1
   
     try {
-      const res = await this.database.executeSql(query, params);
+      const res = await this.database.executeSql(queryCrear, params);
+      console.log('Nueva venta creada con ID:', res.insertId);
       return res.insertId;  // Retorna el ID de la nueva venta
     } catch (error) {
       console.error('Error al crear la venta:', error);
-      throw error;
+      throw error;  // Lanza el error para ser manejado en otro lugar
     }
-  } 
+  }
+
 
 
   //añadir al carrito
   async agregarDetalleVenta(idVenta: number, precio: number, idProducto: number): Promise<void> {
     const subtotal = precio * 1;  // Precio por la cantidad inicial de 1
     const query = `
-      INSERT INTO detalle (cantidad, subtotal, id_venta, id_producto) 
+      INSERT INTO detalle (cantidad_d, subtotal, id_venta, id_producto) 
       VALUES (?, ?, ?, ?);
     `;
     const params = [1, subtotal, idVenta, idProducto];
@@ -1451,7 +1468,7 @@ obtenerIdUsuarioLogueado() {
   async agregarCantidad(idVenta: number, idProducto: number): Promise<void> {
     const query = `
       UPDATE detalle 
-      SET cantidad = cantidad + 1 
+      SET cantidad_d = cantidad_d + 1 
       WHERE id_venta = ? AND id_producto = ?;
     `;
   
@@ -1467,7 +1484,7 @@ obtenerIdUsuarioLogueado() {
   //restar stock
   async restarCantidad(idVenta: number, idProducto: number): Promise<void> {
     const queryVerificar = `
-      SELECT cantidad 
+      SELECT cantidad_d 
       FROM detalle 
       WHERE id_venta = ? AND id_producto = ?;
     `;
@@ -1479,7 +1496,7 @@ obtenerIdUsuarioLogueado() {
   
     const queryRestar = `
       UPDATE detalle 
-      SET cantidad = cantidad - 1 
+      SET cantidad_d = cantidad_d - 1 
       WHERE id_venta = ? AND id_producto = ?;
     `;
   
@@ -1518,7 +1535,7 @@ obtenerIdUsuarioLogueado() {
     const query = `
       DELETE FROM detalle 
       WHERE id_venta = ? 
-        AND (cantidad = 0 OR 
+        AND (cantidad_d = 0 OR 
              id_producto IN (
                SELECT id_producto 
                FROM producto 
@@ -1538,7 +1555,7 @@ obtenerIdUsuarioLogueado() {
   //calcular precio final 
   async preciofinal(idVenta: number): Promise<number> {
     const query = `
-      SELECT SUM(cantidad * subtotal) AS total 
+      SELECT SUM(cantidad_d * subtotal) AS total 
       FROM detalle 
       WHERE id_venta = ?;
     `;
@@ -1554,41 +1571,6 @@ obtenerIdUsuarioLogueado() {
       throw error;
     }
   }
-
-  /*
-  //añadir items al carrito
-  async addProductoCarrito(id_usuario: number): Promise<any[]> {
-    return this.database.executeSql('INSERT INTO DETALLE ', [id_usuario]).then(res => {
-      //variable para almacenar el resultado de la consulta
-      let itemsD: Detallesventa[] = [];
-      //verificar si hay registros en la consulta
-      if (res.rows.length > 0) {
-        //se recorren los resultados
-        for (var i = 0; i < res.rows.length; i++) {
-          //se agrega el registro a mi variable (itemsU)
-          itemsD.push({
-            id_detalle: res.rows.item(i).id_detalle,
-            cantidad: res.rows.item(i).cantidad,
-            subtotal: res.rows.item(i).subtotal,
-            id_venta: res.rows.item(i).id_venta,
-            id_producto: res.rows.item(i).id_producto
-          })
-        }
-      }
-      this.listadoDetalle_carrito.next(itemsD as any);
-      return itemsD;
-    })
-  }*/
-
-  //quitar items del carrito
-
-
-  //modificar items del carro (se suma 1 del mismo que ya esta)
-
-  
-  //modificar items del carro (se resta 1 del mismo que ya esta)
-
-
 
   //////////////////////////////////////////////////////////////////////////////////
 

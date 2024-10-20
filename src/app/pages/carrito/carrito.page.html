@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/" text="Atras" icon="arrow-back-outline" [routerLink]="['/home']"></ion-back-button>
+      <ion-back-button defaultHref="/" text="Atrás" icon="arrow-back-outline" [routerLink]="['/home']"></ion-back-button>
     </ion-buttons>
     <ion-title>Carro de Compras</ion-title>
   </ion-toolbar>
@@ -9,22 +9,22 @@
 
 <ion-content [fullscreen]="true">
   <ng-container *ngIf="mostrarSinStock; else disponiblesPage">
-    <h3 style="color: white; text-align: center;">Productos sin stock o no disponibles</h3>
+    <h3 style="color: white; text-align: center;">Productos sin stock</h3>
     <ion-card class="producto-card" *ngFor="let producto of productosSinStock">
       <ion-item lines="none">
         <ion-thumbnail slot="start">
-          <img [src]="producto.imagen" [alt]="producto.nombre" />
+          <img [src]="producto.foto_prod" [alt]="producto.nombre_prod" />
         </ion-thumbnail>
         <ion-label>
-          <h3 class="titulo-producto">{{ producto.nombre }}</h3>
-          <p class="precio"><strong>${{ producto.precio }}</strong></p>
-          <p style="color: red; font-weight: bold;">Sin stock / No disponible</p>
+          <h3 class="titulo-producto">{{ producto.nombre_prod }}</h3>
+          <p class="precio"><strong>${{ producto.subtotal }}</strong></p>
+          <p style="color: red; font-weight: bold;">Sin stock</p>
         </ion-label>
       </ion-item>
     </ion-card>
 
-    <ion-button expand="block" color="primary" (click)="eliminarProductosSinStock()">
-      Eliminar Productos sin Stock / No disponibles
+    <ion-button expand="block" color="primary" (click)="continuar()">
+      Continuar
     </ion-button>
   </ng-container>
 
@@ -33,11 +33,11 @@
     <ion-card class="producto-card" *ngFor="let producto of productosDisponibles">
       <ion-item lines="none">
         <ion-thumbnail slot="start">
-          <img [src]="producto.imagen" [alt]="producto.nombre" />
+          <img [src]="producto.foto_prod" [alt]="producto.nombre_prod" />
         </ion-thumbnail>
         <ion-label>
-          <h3 class="titulo-producto">{{ producto.nombre }}</h3>
-          <p class="precio"><strong>${{ producto.precio }}</strong></p>
+          <h3 class="titulo-producto">{{ producto.nombre_prod }}</h3>
+          <p class="precio"><strong>${{ producto.subtotal }}</strong></p>
         </ion-label>
       </ion-item>
 

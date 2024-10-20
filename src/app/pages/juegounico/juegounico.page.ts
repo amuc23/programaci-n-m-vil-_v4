@@ -56,7 +56,7 @@ export class JuegounicoPage implements OnInit {
         return;
       }
   
-      const venta = await this.bd.verificarVentaActiva(this.idUserLogged);
+      const venta = await this.bd.verificarOCrearVenta(this.idUserLogged);
       console.log('Venta activa encontrada:', venta);
   
       if (venta) {
@@ -72,6 +72,7 @@ export class JuegounicoPage implements OnInit {
   }
 
   async agregarAlCarrito() {
+    await this.verificarOCrearVenta();
     try {
       if (!this.idVentaActiva) {
         this.alertasService.presentAlert('Error', 'No se encontró una venta activa.');

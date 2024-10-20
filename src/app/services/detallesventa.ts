@@ -4,6 +4,8 @@ export class Detallesventa {
     id_detalle!: number;
     cantidad!: number;
     subtotal!: number;
+    nombre_prod!: string;
+    foto_prod!: Blob;
     id_venta!: number;
     id_producto!: number;
 }

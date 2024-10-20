@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { AlertasService } from 'src/app/services/alertas.service';
 import { ManejodbService } from 'src/app/services/manejodb.service';
 
@@ -10,81 +10,76 @@ import { ManejodbService } from 'src/app/services/manejodb.service';
 export class CarritoPage implements OnInit {
   productosDisponibles: any[] = [];
   productosSinStock: any[] = [];
-  mostrarSinStock: boolean = true;
+  productos: any[] = [];
   idVentaActiva: number | null = null;
+  mostrarSinStock: boolean = true;
 
   constructor(
     private alertasService: AlertasService,
-    private bd: ManejodbService
+    private bd: ManejodbService,
+    private cd: ChangeDetectorRef // Detecta cambios manualmente si es necesario
   ) {}
 
   async ngOnInit() {
-    const idUsuario = await this.bd.obtenerIdUsuarioLogueado();
-    if (idUsuario) {
-      await this.verificarOCrearVenta(idUsuario);
-      await this.cargarCarrito();
-    }
   }
 
-  async verificarOCrearVenta(idUsuario: number) {
+  async ionViewWillEnter() {
+    await this.cargarProductos();
+  }
+
+  async obtenerVentaActiva() {
     try {
-      this.idVentaActiva = await this.bd.verificarVentaActiva(idUsuario);
-
-      if (!this.idVentaActiva) {
-        this.idVentaActiva = await this.bd.crearVenta(idUsuario);
-        console.log('Nueva venta creada con ID:', this.idVentaActiva);
-      } else {
-        console.log('Venta activa existente con ID:', this.idVentaActiva);
+      const idUsuario = await this.bd.obtenerIdUsuarioLogueado();
+      if (!idUsuario) {
+        this.alertasService.presentAlert('Error', 'Debes estar logueado.');
+        return;
       }
+      this.idVentaActiva = await this.bd.verificarOCrearVenta(idUsuario);
+      console.log('ID de Venta Activa:', this.idVentaActiva);
     } catch (error) {
-      console.error('Error al verificar o crear la venta:', error);
+      console.error('Error al obtener la venta activa:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo obtener la venta activa.');
     }
   }
 
-  async cargarCarrito() {
+  async cargarProductos() {
+    await this.obtenerVentaActiva();
     if (!this.idVentaActiva) return;
 
     try {
-      const productos = await this.bd.obtenerDetallesVenta(this.idVentaActiva);
-      this.productosDisponibles = productos.filter(p => p.cantidad > 0);
-      this.productosSinStock = productos.filter(p => p.cantidad === 0);
+      this.productos = await this.bd.obtenerCarroPorUsuario(this.idVentaActiva);
+
+      this.productosDisponibles = this.productos.filter(p => p.cantidad > 0);
+      this.productosSinStock = this.productos.filter(p => p.cantidad === 0);
 
       this.mostrarSinStock = this.productosSinStock.length > 0;
+
+      // Forzamos la detección de cambios en caso de que Angular no los detecte automáticamente
+      this.cd.detectChanges();
     } catch (error) {
-      console.error('Error al cargar el carrito:', error);
+      console.error('Error al cargar productos del carrito:', error);
+      this.alertasService.presentAlert('Error', 'No se pudieron cargar los productos.');
     }
   }
 
-  async eliminarProductosSinStock() {
-    if (!this.idVentaActiva) return;
-
-    try {
-      await this.bd.eliminarProductosSinStock(this.idVentaActiva);
-      await this.cargarCarrito();
-      this.alertasService.presentAlert(
-        'Productos eliminados',
-        'Los productos sin stock o no disponibles fueron eliminados del carrito.'
-      );
-    } catch (error) {
-      console.error('Error al eliminar productos sin stock o no disponibles:', error);
-    }
+  continuar() {
+    this.mostrarSinStock = false;
   }
 
   incrementarCantidad(producto: any) {
     producto.cantidad++;
+    this.bd.agregarCantidad(this.idVentaActiva!, producto.id_producto);
   }
 
   decrementarCantidad(producto: any) {
     if (producto.cantidad > 0) {
       producto.cantidad--;
+      this.bd.restarCantidad(this.idVentaActiva!, producto.id_producto);
     }
   }
 
   calcularTotal() {
-    return this.productosDisponibles.reduce(
-      (total, producto) => total + producto.precio * producto.cantidad,
-      0
-    );
+    return this.productosDisponibles.reduce((total, producto) => total + producto.subtotal, 0);
   }
 
   alertascarro() {
