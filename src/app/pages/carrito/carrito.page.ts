@@ -102,4 +102,12 @@ export class CarritoPage implements OnInit {
   alertascarro() {
     this.alertasService.presentAlert('Gracias Por Su Compra', '');
   }
+
+
+  async COMPRAAAAR(){
+    const idUsuario = await this.bd.obtenerIdUsuarioLogueado();
+    await this.bd.confirmarCompra(this.idVentaActiva, idUsuario);
+    await this.actualizarPrecioTotal();  // Actualizamos el total.
+    await this.cargarProductos();
+  }
 }

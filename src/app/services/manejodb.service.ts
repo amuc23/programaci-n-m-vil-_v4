@@ -1401,7 +1401,7 @@ obtenerIdUsuarioLogueado() {
 
 
   //verifica que la venta exista con ese usuario
-  async verificarOCrearVenta(idUsuario: number): Promise<number> {
+  async verificarOCrearVenta(idUsuario: any): Promise<number> {
     const queryVerificar = `
       SELECT id_venta 
       FROM venta 
@@ -1520,7 +1520,7 @@ obtenerIdUsuarioLogueado() {
 
 
   //ejecutar la venta
-  public async confirmarCompra(idVenta: number): Promise<void> {
+  async confirmarCompra(idVenta: any, idUser: any): Promise<void> {
     const query = `
       UPDATE venta 
       SET id_estado = 2 
@@ -1529,6 +1529,8 @@ obtenerIdUsuarioLogueado() {
   
     try {
       await this.database.executeSql(query, [idVenta]);
+      this.alertasService.presentAlert("¡Compra Exitosa!","¡GRACIAS!");
+      await this.verificarOCrearVenta(idUser);
     } catch (error) {
       console.error('Error al confirmar la compra:', error);
       throw error;
