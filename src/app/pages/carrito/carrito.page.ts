@@ -13,6 +13,7 @@ export class CarritoPage implements OnInit {
   productos: any[] = [];
   idVentaActiva: number | null = null;
   mostrarSinStock: boolean = true;
+  totalVENTA: number = 0; 
 
   constructor(
     private alertasService: AlertasService,
@@ -20,12 +21,16 @@ export class CarritoPage implements OnInit {
     private cd: ChangeDetectorRef // Detecta cambios manualmente si es necesario
   ) {}
 
+
   async ngOnInit() {
   }
 
+
   async ionViewWillEnter() {
     await this.cargarProductos();
+    await this.actualizarPrecioTotal();  // Llama al calcular el total
   }
+
 
   async obtenerVentaActiva() {
     try {
@@ -42,6 +47,7 @@ export class CarritoPage implements OnInit {
     }
   }
 
+
   async cargarProductos() {
     await this.obtenerVentaActiva();
     if (!this.idVentaActiva) return;
@@ -49,7 +55,7 @@ export class CarritoPage implements OnInit {
     try {
       this.productos = await this.bd.obtenerCarroPorUsuario(this.idVentaActiva);
   
-      this.productosDisponibles = this.productos.filter(p => p.cantidad_d > 0);
+      this.productosDisponibles = this.productos;
       this.productosSinStock = this.productos.filter(p => p.cantidad_d === 0);
   
       this.mostrarSinStock = this.productosSinStock.length > 0;
@@ -61,20 +67,30 @@ export class CarritoPage implements OnInit {
       this.alertasService.presentAlert('Error', 'No se pudieron cargar los productos.');
     }
   }
-
+  
   continuar() {
     this.mostrarSinStock = false;
   }
 
-  incrementarCantidad(producto: any) {
-    producto.cantidad++;
-    this.bd.agregarCantidad(this.idVentaActiva!, producto.id_producto);
+  async incrementarCantidad(producto: any) {
+    producto.cantidad_d++;
+    await this.bd.agregarCantidad(this.idVentaActiva, producto.id_producto);
+    this.actualizarPrecioTotal();
   }
 
-  decrementarCantidad(producto: any) {
+  async decrementarCantidad(producto: any) {
     if (producto.cantidad > 0) {
-      producto.cantidad--;
-      this.bd.restarCantidad(this.idVentaActiva!, producto.id_producto);
+      producto.cantidad_d--;
+      await this.bd.restarCantidad(this.idVentaActiva, producto.id_producto);
+      this.actualizarPrecioTotal();
+    }
+  }
+
+
+  async actualizarPrecioTotal() {
+    if (this.idVentaActiva) {
+      this.totalVENTA  = await this.bd.preciofinal(this.idVentaActiva);
+      this.cd.detectChanges();  // Forzamos la actualización de la vista
     }
   }
 

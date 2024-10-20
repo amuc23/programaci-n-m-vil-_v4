@@ -1448,25 +1448,24 @@ obtenerIdUsuarioLogueado() {
 
   //añadir al carrito
   async agregarDetalleVenta(idVenta: number, precio: number, idProducto: number): Promise<void> {
-    const subtotal = precio * 1;
+    const subtotal = precio * 1;  // Precio por la cantidad inicial de 1
     const query = `
       INSERT INTO detalle (cantidad_d, subtotal, id_venta, id_producto) 
-      VALUES (1, ?, ?, ?)
+      VALUES (?, ?, ?, ?);
     `;
+    const params = [1, subtotal, idVenta, idProducto];
+  
     try {
-      const res = await this.database.executeSql(query, [subtotal, idVenta, idProducto]);
-      console.log('Producto agregado al carrito:', res);
-      if (res.rowsAffected === 0) {
-        throw new Error('No se pudo agregar el producto al carrito.');
-      }
+      await this.database.executeSql(query, params);
+      console.log('Producto añadido al carrito.');
     } catch (error) {
-      console.error('Error al agregar detalle de venta:', error);
+      console.error('Error al agregar el detalle de venta:', error);
       throw error;
     }
   }
 
   //añadir mas stock
-  async agregarCantidad(idVenta: number, idProducto: number): Promise<void> {
+  async agregarCantidad(idVenta: any, idProducto: any): Promise<void> {
     const query = `
       UPDATE detalle 
       SET cantidad_d = cantidad_d + 1 
@@ -1483,7 +1482,7 @@ obtenerIdUsuarioLogueado() {
   }
 
   //restar stock
-  async restarCantidad(idVenta: number, idProducto: number): Promise<void> {
+  async restarCantidad(idVenta: any, idProducto: any): Promise<void> {
     const queryVerificar = `
       SELECT cantidad_d 
       FROM detalle 
@@ -1503,12 +1502,15 @@ obtenerIdUsuarioLogueado() {
   
     try {
       const res = await this.database.executeSql(queryVerificar, [idVenta, idProducto]);
-      if (res.rows.length > 0 && res.rows.item(0).cantidad > 1) {
-        await this.database.executeSql(queryRestar, [idVenta, idProducto]);
-      } else {
-        await this.database.executeSql(queryEliminar, [idVenta, idProducto]);
+      if (res.rows.length > 0) {
+        const cantidad = res.rows.item(0).cantidad_d;
+        if (cantidad > 1) {
+          await this.database.executeSql(queryRestar, [idVenta, idProducto]);
+        } else {
+          await this.database.executeSql(queryEliminar, [idVenta, idProducto]);
+        }
       }
-      await this.preciofinal(idVenta);  // Actualiza el precio total después del cambio
+      await this.preciofinal(idVenta);  // Actualiza el total después del cambio
     } catch (error) {
       console.error('Error al restar cantidad:', error);
       throw error;
@@ -1554,7 +1556,7 @@ obtenerIdUsuarioLogueado() {
   }
 
   //calcular precio final 
-  async preciofinal(idVenta: number): Promise<number> {
+  async preciofinal(idVenta: any): Promise<number> {
     const query = `
       SELECT SUM(cantidad_d * subtotal) AS total 
       FROM detalle 
@@ -1563,8 +1565,8 @@ obtenerIdUsuarioLogueado() {
   
     try {
       const res = await this.database.executeSql(query, [idVenta]);
-      if (res.rows.length > 0) {
-        return res.rows.item(0).total || 0;  // Retorna el total calculado o 0 si no hay resultados
+      if (res.rows.length > 0 && res.rows.item(0).total != null) {
+        return res.rows.item(0).total;
       }
       return 0;
     } catch (error) {
@@ -1572,6 +1574,7 @@ obtenerIdUsuarioLogueado() {
       throw error;
     }
   }
+  
 
   //////////////////////////////////////////////////////////////////////////////////
 
