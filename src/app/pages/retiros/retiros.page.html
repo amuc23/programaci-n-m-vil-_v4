@@ -1,0 +1,59 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-back-button defaultHref="/" text="Carrito" icon="cart-outline" [routerLink]="['/carrito']"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Retiro</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Retiros</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Usuario: Carlos Méndez</ion-card-title>
+      <ion-card-subtitle>Monto Pagado: $250.000</ion-card-subtitle>
+    </ion-card-header>
+  </ion-card>
+
+  <ion-list>
+    <ion-item lines="none">
+      <ion-thumbnail slot="start" class="product-image">
+        <img src="assets/img/juguetes/Batman-juguete.jpg" alt="Juguete" />
+      </ion-thumbnail>
+      <ion-label class="product-label">
+        <h1>Batman vs Superman - Figura de Colección</h1>
+      </ion-label>
+    </ion-item>
+
+    <ion-item lines="none">
+      <ion-thumbnail slot="start" class="product-image">
+        <img src="assets/img/consolas/2dsXL-consola.jpeg" alt="Consola" />
+      </ion-thumbnail>
+      <ion-label class="product-label">
+        <h1>Nintendo 3DS</h1>
+      </ion-label>
+    </ion-item>
+
+    <ion-item lines="none">
+      <ion-thumbnail slot="start" class="product-image">
+        <img src="assets/img/juegos/caratula-hollow.jpeg" alt="Videojuego" />
+      </ion-thumbnail>
+      <ion-label class="product-label">
+        <h1>Hollow Knight</h1>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <div class="qr-container">
+    <img src="assets/img/qr.jpg" alt="QR Code" />
+  </div>
+</ion-content>
