@@ -66,9 +66,7 @@ export class ConsolaunicaPage implements OnInit {
 
       await this.bd.agregarFav(idUserLogged, this.consolaLlego.id_producto);
       this.estaEnFavoritos = true;
-      this.alertasService.presentAlert('Éxito', 'Añadido a favoritos');
     } catch (error) {
-      console.error('Error al agregar a favoritos:', error);
       this.alertasService.presentAlert('Error', 'No se pudo añadir a favoritos: ' + JSON.stringify(error));
     }
   }
@@ -77,9 +75,7 @@ export class ConsolaunicaPage implements OnInit {
     try {
       await this.bd.quitarFav(this.consolaLlego.id_producto, this.idUserLogged);
       this.estaEnFavoritos = false;
-      this.alertasService.presentAlert('Éxito', 'Eliminado de favoritos');
     } catch (error) {
-      console.error('Error al quitar de favoritos:', error);
       this.alertasService.presentAlert('Error', 'No se pudo eliminar de favoritos: ' + JSON.stringify(error));
     }
   }
