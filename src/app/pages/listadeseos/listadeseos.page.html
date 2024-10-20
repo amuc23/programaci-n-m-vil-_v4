@@ -8,13 +8,12 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="wishlist-content">
-  <ion-card>
+  <ion-card *ngIf="favoritos && favoritos.length > 0; else noFavoritos">
     <ion-card-header>
       <ion-card-title>Lista de favoritos</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <ion-grid>
-
         <!-- Recorremos los favoritos -->
         <ion-row *ngFor="let fav of favoritos" class="product-row">
           <ion-col size="3" class="product-image-col">
@@ -32,8 +31,19 @@
             </ion-button>
           </ion-col>
         </ion-row>
-
       </ion-grid>
     </ion-card-content>
   </ion-card>
+
+  <!-- Template alternativo para cuando no hay favoritos -->
+  <ng-template #noFavoritos>
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Lista sin favoritos</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>No tienes productos en tu lista de deseos.</p>
+      </ion-card-content>
+    </ion-card>
+  </ng-template>
 </ion-content>
