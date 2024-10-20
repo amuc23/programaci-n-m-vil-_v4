@@ -1522,4 +1522,43 @@ async validarRespuestaSeguridad(username: string, respuesta: string): Promise<bo
       this.alertasService.presentAlert("Agregar", "Error: " + JSON.stringify(e));
     });
   }
+
+
+  //////////////////////////////////////
+
+  async obtenerResecnasUsuario(idUsuario: number): Promise<any[]> {
+    const query = `
+      SELECT r.id_resecna, r.text_resecna, r.id_producto, u.username, 
+             u.foto_usuario, p.nombre_prod 
+      FROM resecna r 
+      INNER JOIN usuario u ON r.id_usuario = u.id_usuario 
+      INNER JOIN producto p ON r.id_producto = p.id_producto 
+      WHERE r.id_usuario = ?`;
+  
+    try {
+      const res = await this.database.executeSql(query, [idUsuario]);
+      let resecnas = [];
+      for (let i = 0; i < res.rows.length; i++) {
+        resecnas.push(res.rows.item(i));
+      }
+      return resecnas;
+    } catch (error) {
+      console.error('Error al obtener reseñas:', error);
+      throw error;
+    }
+  }
+
+  async eliminarResecnasUsuario(idR: any) {
+    try {
+      await this.database.transaction(async (tx) => {
+        await tx.executeSql('DELETE FROM resecna WHERE id_resecna = ?', [idR]);
+      });
+      this.alertasService.presentAlert("Eliminar", "Reseña eliminada");
+      // Vuelve a cargar las reseñas
+      this.obtenerResecnas3();
+    } catch (e) {
+      this.alertasService.presentAlert("Eliminar", "Error: " + JSON.stringify(e));
+    }
+  }
+
 }
