@@ -45,17 +45,17 @@ export class CarritoPage implements OnInit {
   async cargarProductos() {
     await this.obtenerVentaActiva();
     if (!this.idVentaActiva) return;
-
+  
     try {
       this.productos = await this.bd.obtenerCarroPorUsuario(this.idVentaActiva);
-
-      this.productosDisponibles = this.productos.filter(p => p.cantidad > 0);
-      this.productosSinStock = this.productos.filter(p => p.cantidad === 0);
-
+  
+      this.productosDisponibles = this.productos.filter(p => p.cantidad_d > 0);
+      this.productosSinStock = this.productos.filter(p => p.cantidad_d === 0);
+  
       this.mostrarSinStock = this.productosSinStock.length > 0;
-
-      // Forzamos la detección de cambios en caso de que Angular no los detecte automáticamente
-      this.cd.detectChanges();
+  
+      console.log('Productos cargados en el carrito:', this.productos);
+      this.cd.detectChanges();  // Forzar detección de cambios
     } catch (error) {
       console.error('Error al cargar productos del carrito:', error);
       this.alertasService.presentAlert('Error', 'No se pudieron cargar los productos.');

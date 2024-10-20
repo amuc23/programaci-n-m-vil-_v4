@@ -1448,18 +1448,19 @@ obtenerIdUsuarioLogueado() {
 
   //añadir al carrito
   async agregarDetalleVenta(idVenta: number, precio: number, idProducto: number): Promise<void> {
-    const subtotal = precio * 1;  // Precio por la cantidad inicial de 1
+    const subtotal = precio * 1;
     const query = `
       INSERT INTO detalle (cantidad_d, subtotal, id_venta, id_producto) 
-      VALUES (?, ?, ?, ?);
+      VALUES (1, ?, ?, ?)
     `;
-    const params = [1, subtotal, idVenta, idProducto];
-  
     try {
-      await this.database.executeSql(query, params);
-      console.log('Producto añadido al carrito.');
+      const res = await this.database.executeSql(query, [subtotal, idVenta, idProducto]);
+      console.log('Producto agregado al carrito:', res);
+      if (res.rowsAffected === 0) {
+        throw new Error('No se pudo agregar el producto al carrito.');
+      }
     } catch (error) {
-      console.error('Error al agregar el detalle de venta:', error);
+      console.error('Error al agregar detalle de venta:', error);
       throw error;
     }
   }

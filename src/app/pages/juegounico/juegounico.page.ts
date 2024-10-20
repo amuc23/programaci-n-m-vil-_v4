@@ -78,15 +78,18 @@ export class JuegounicoPage implements OnInit {
         this.alertasService.presentAlert('Error', 'No se encontró una venta activa.');
         return;
       }
-
+  
       await this.bd.agregarDetalleVenta(
         this.idVentaActiva,
         this.juegoLlego.precio_prod,
         this.juegoLlego.id_producto
       );
-
-      this.alertasService.presentAlert('Añadido al Carrito', 'El juego fue añadido correctamente.');
+  
       console.log(`Juego ${this.juegoLlego.nombre_prod} añadido al carrito.`);
+      this.alertasService.presentAlert('Añadido al Carrito', 'El juego fue añadido correctamente.');
+  
+      // Navegar al carrito para verificar
+      this.router.navigate(['/carrito']);
     } catch (error) {
       console.error('Error al agregar al carrito:', error);
       this.alertasService.presentAlert('Error', 'No se pudo añadir al carrito.');
