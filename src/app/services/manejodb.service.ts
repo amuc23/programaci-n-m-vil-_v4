@@ -1230,7 +1230,6 @@ async eliminarConsola(idCU: any) {
             'INSERT INTO resecna (text_resecna, id_usuario, id_producto) VALUES (?, ?, ?)', 
             [textoR, id_User, id_Prod]
         );
-        this.alertasService.presentAlert("Éxito", "Reseña agregada con éxito");
         this.consultarResecnasPorIdProductoYusuarios(id_Prod);
     } catch (error) {
         this.alertasService.presentAlert("Error", "Error al agregar la reseña: " + JSON.stringify(error));
@@ -1325,7 +1324,6 @@ obtenerIdUsuarioLogueado() {
       await this.database.transaction(async (tx) => {
         await tx.executeSql('DELETE FROM resecna WHERE id_resecna = ?', [idR]);
       });
-      this.alertasService.presentAlert("Eliminar", "Reseña eliminada");
       this.obtenerResecnas3();
     } catch (e) {
       this.alertasService.presentAlert("Eliminar", "Error: " + JSON.stringify(e));
@@ -1431,7 +1429,6 @@ obtenerIdUsuarioLogueado() {
         `DELETE FROM favoritos WHERE id_producto = ? AND id_usuario = ?`,
         [idP, idU]
       );
-      this.silentalert.presentSilentToast("Eliminado de Favoritos", 3000);
     } catch (error) {
       this.alertasService.presentAlert("Error", "No se pudo eliminar: " + JSON.stringify(error));
     }
@@ -1553,7 +1550,6 @@ async validarRespuestaSeguridad(username: string, respuesta: string): Promise<bo
       await this.database.transaction(async (tx) => {
         await tx.executeSql('DELETE FROM resecna WHERE id_resecna = ?', [idR]);
       });
-      this.alertasService.presentAlert("Eliminar", "Reseña eliminada");
       // Vuelve a cargar las reseñas
       this.obtenerResecnas3();
     } catch (e) {

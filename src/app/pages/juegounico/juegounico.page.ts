@@ -66,7 +66,6 @@ export class JuegounicoPage implements OnInit {
   
       await this.bd.agregarFav(idUserLogged, this.juegoLlego.id_producto);
       this.estaEnListaDeseos = true;
-      this.alertasService.presentAlert('Éxito', 'Añadido a la lista de deseos');
     } catch (error) {
       console.error('Error al agregar a la lista de deseos:', error);
       this.alertasService.presentAlert('Error', 'No se pudo añadir a la lista de deseos: ' + JSON.stringify(error));
@@ -78,7 +77,6 @@ export class JuegounicoPage implements OnInit {
     try {
       await this.bd.quitarFav(this.juegoLlego.id_producto, this.idUserLogged);
       this.estaEnListaDeseos = false;
-      this.alertasService.presentAlert('Éxito', 'Eliminado de la lista de deseos');
     } catch (error) {
       this.alertasService.presentAlert('Error', 'No se pudo eliminar: ' + error);
     }

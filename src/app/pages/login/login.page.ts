@@ -74,13 +74,11 @@ export class LoginPage implements OnInit {
     const usuariosMantenerSesion = await this.bd.consultarUsuariosPorMantenerSesion();
 
     if (usuariosMantenerSesion.length === 0) {
-      this.silentalert.presentSilentToast("No hay usuarios con sesión activa", 2000);
       this.autenticacion.cerrarSesion();
     } else {
       const usuario = usuariosMantenerSesion[0];
       this.usernameunlogged = usuario.username;
       this.password = usuario.clave;
-      this.silentalert.presentSilentToast("Inicio de sesión automático", 3000);
       await this.loggin(this.usernameunlogged, this.password);
     }
   }
