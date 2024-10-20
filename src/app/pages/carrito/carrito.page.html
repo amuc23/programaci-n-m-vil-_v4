@@ -9,7 +9,7 @@
 
 <ion-content [fullscreen]="true">
   <ng-container *ngIf="mostrarSinStock; else disponiblesPage">
-    <h3 style="color: white; text-align: center;">Productos sin stock</h3>
+    <h3 style="color: white; text-align: center;">Productos sin stock o no disponibles</h3>
     <ion-card class="producto-card" *ngFor="let producto of productosSinStock">
       <ion-item lines="none">
         <ion-thumbnail slot="start">
@@ -18,13 +18,13 @@
         <ion-label>
           <h3 class="titulo-producto">{{ producto.nombre }}</h3>
           <p class="precio"><strong>${{ producto.precio }}</strong></p>
-          <p style="color: red; font-weight: bold;">Sin stock</p>
+          <p style="color: red; font-weight: bold;">Sin stock / No disponible</p>
         </ion-label>
       </ion-item>
     </ion-card>
 
-    <ion-button expand="block" color="primary" (click)="continuar()">
-      Continuar
+    <ion-button expand="block" color="primary" (click)="eliminarProductosSinStock()">
+      Eliminar Productos sin Stock / No disponibles
     </ion-button>
   </ng-container>
 

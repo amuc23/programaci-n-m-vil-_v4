@@ -49,7 +49,7 @@ export class ManejodbService {
   venta: string = "CREATE TABLE IF NOT EXISTS venta (id_venta INTEGER PRIMARY KEY autoincrement, fecha_venta DATE NOT NULL, total INTEGER NOT NULL, estado_retiro BOOLEAN NOT NULL, id_usuario INTEGER, id_estado INTEGER, FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario), FOREIGN KEY (id_estado) REFERENCES estado(id_estado));";
 
   //detalle
-  detalle: string = "CREATE TABLE IF NOT EXISTS detalle (id_detalle INTEGER PRIMARY KEY autoincrement, cantidad_d INTEGER NOT NULL, subtotal INTEGER NOT NULL, id_venta INTEGER, id_producto INTEGER, FOREIGN KEY (id_venta) REFERENCES venta(id_venta), FOREIGN KEY (id_producto) REFERENCES producto(id_producto));";
+  detalle: string = "CREATE TABLE IF NOT EXISTS detalle (id_detalle INTEGER PRIMARY KEY autoincrement, cantidad_d INTEGER, subtotal INTEGER, id_venta INTEGER, id_producto INTEGER, FOREIGN KEY (id_venta) REFERENCES venta(id_venta), FOREIGN KEY (id_producto) REFERENCES producto(id_producto));";
   //ligado a detallesventa
   //estado_retiro: 0 = listo para retirar /// 1 = retirado
 
@@ -1347,31 +1347,240 @@ obtenerIdUsuarioLogueado() {
   //elparametro a usar es el id del usuario en sesion, de esta forma, se traeran los carros
   //de los usuarios conectados
   async obtenerCarroPorUsuario(id_usuario: number): Promise<any[]> {
+    return this.database.executeSql('SELECT d.id_detalle, d.cantidad, d.subtotal, d.id_venta, d.id_producto FROM detalle d INNER JOIN venta v ON d.id_venta = v.id_venta INNER JOIN usuario u ON v.id_usuario = u.id_usuario WHERE u.id_usuario = ?', [id_usuario]).then(res => {
+      //variable para almacenar el resultado de la consulta
+      let itemsD: Detallesventa[] = [];
+      //verificar si hay registros en la consulta
+      if (res.rows.length > 0) {
+        //se recorren los resultados
+        for (var i = 0; i < res.rows.length; i++) {
+          //se agrega el registro a mi variable (itemsU)
+          itemsD.push({
+            id_detalle: res.rows.item(i).id_detalle,
+            cantidad: res.rows.item(i).cantidad,
+            subtotal: res.rows.item(i).subtotal,
+            id_venta: res.rows.item(i).id_venta,
+            id_producto: res.rows.item(i).id_producto
+          })
+        }
+      }
+      this.listadoDetalle_carrito.next(itemsD as any);
+      return itemsD;
+    })
+  }
+
+  //select V2.0
+  async obtenerDetallesVenta(idVenta: number): Promise<any[]> {
     const query = `
-      SELECT d.*, p.nombre_prod, p.precio_prod, p.descripcion_prod, v.fecha_venta, v.total
+      SELECT p.nombre_prod AS nombre, p.precio_prod AS precio, d.cantidad, p.foto_prod AS imagen
       FROM detalle d
-      INNER JOIN venta v ON d.id_venta = v.id_venta
       INNER JOIN producto p ON d.id_producto = p.id_producto
-      WHERE v.id_usuario = ?;
+      WHERE d.id_venta = ?;
     `;
   
     try {
-      const result = await this.database.executeSql(query, [id_usuario]);
-      let carrito = [];
-  
-      for (let i = 0; i < result.rows.length; i++) {
-        carrito.push(result.rows.item(i));
+      const res = await this.database.executeSql(query, [idVenta]);
+      const productos: any[] = [];
+      for (let i = 0; i < res.rows.length; i++) {
+        productos.push(res.rows.item(i));
       }
-  
-      return carrito;
+      return productos;
     } catch (error) {
-      console.error('Error al obtener el carrito del usuario:', error);
+      console.error('Error al obtener los detalles de la venta:', error);
       return [];
     }
   }
 
-  //añadir items al carrito
 
+  //verifica que la venta exista con ese usuario
+  async verificarVentaActiva(idUsuario: number): Promise<number | null> {
+    const query = `
+      SELECT id_venta 
+      FROM venta 
+      WHERE id_usuario = ? AND id_estado = 1;
+    `;
+  
+    try {
+      const res = await this.database.executeSql(query, [idUsuario]);
+      if (res.rows.length > 0) {
+        return res.rows.item(0).id_venta;  // Retorna el ID de la venta activa
+      }
+      return null;  // No hay venta activa
+    } catch (error) {
+      console.error('Error al verificar la venta activa:', error);
+      return null;
+    }
+  }
+
+  //crea la venta si es que no existe con ese usuario
+  async crearVenta(idUsuario: number): Promise<number> {
+    const query = `
+      INSERT INTO venta (fecha_venta, total, estado_retiro, id_usuario, id_estado) 
+      VALUES (?, ?, ?, ?, ?);
+    `;
+    const fechaHoy = new Date().toISOString();
+    const params = [fechaHoy, 0, 0, idUsuario, 1];  // Estado = 1
+  
+    try {
+      const res = await this.database.executeSql(query, params);
+      return res.insertId;  // Retorna el ID de la nueva venta
+    } catch (error) {
+      console.error('Error al crear la venta:', error);
+      throw error;
+    }
+  } 
+
+
+  //añadir al carrito
+  async agregarDetalleVenta(idVenta: number, precio: number, idProducto: number): Promise<void> {
+    const subtotal = precio * 1;  // Precio por la cantidad inicial de 1
+    const query = `
+      INSERT INTO detalle (cantidad, subtotal, id_venta, id_producto) 
+      VALUES (?, ?, ?, ?);
+    `;
+    const params = [1, subtotal, idVenta, idProducto];
+  
+    try {
+      await this.database.executeSql(query, params);
+      console.log('Producto añadido al carrito.');
+    } catch (error) {
+      console.error('Error al agregar el detalle de venta:', error);
+      throw error;
+    }
+  }
+
+  //añadir mas stock
+  async agregarCantidad(idVenta: number, idProducto: number): Promise<void> {
+    const query = `
+      UPDATE detalle 
+      SET cantidad = cantidad + 1 
+      WHERE id_venta = ? AND id_producto = ?;
+    `;
+  
+    try {
+      await this.database.executeSql(query, [idVenta, idProducto]);
+      await this.preciofinal(idVenta);  // Actualiza el precio total después del cambio
+    } catch (error) {
+      console.error('Error al agregar cantidad:', error);
+      throw error;
+    }
+  }
+
+  //restar stock
+  async restarCantidad(idVenta: number, idProducto: number): Promise<void> {
+    const queryVerificar = `
+      SELECT cantidad 
+      FROM detalle 
+      WHERE id_venta = ? AND id_producto = ?;
+    `;
+  
+    const queryEliminar = `
+      DELETE FROM detalle 
+      WHERE id_venta = ? AND id_producto = ?;
+    `;
+  
+    const queryRestar = `
+      UPDATE detalle 
+      SET cantidad = cantidad - 1 
+      WHERE id_venta = ? AND id_producto = ?;
+    `;
+  
+    try {
+      const res = await this.database.executeSql(queryVerificar, [idVenta, idProducto]);
+      if (res.rows.length > 0 && res.rows.item(0).cantidad > 1) {
+        await this.database.executeSql(queryRestar, [idVenta, idProducto]);
+      } else {
+        await this.database.executeSql(queryEliminar, [idVenta, idProducto]);
+      }
+      await this.preciofinal(idVenta);  // Actualiza el precio total después del cambio
+    } catch (error) {
+      console.error('Error al restar cantidad:', error);
+      throw error;
+    }
+  }
+
+  //ejecutar la venta
+  public async confirmarCompra(idVenta: number): Promise<void> {
+    const query = `
+      UPDATE venta 
+      SET id_estado = 2 
+      WHERE id_venta = ?;
+    `;
+  
+    try {
+      await this.database.executeSql(query, [idVenta]);
+    } catch (error) {
+      console.error('Error al confirmar la compra:', error);
+      throw error;
+    }
+  }
+
+  //eliminar antes de continuar la compra los productos sin stock
+  async eliminarProductosSinStock(idVenta: number): Promise<void> {
+    const query = `
+      DELETE FROM detalle 
+      WHERE id_venta = ? 
+        AND (cantidad = 0 OR 
+             id_producto IN (
+               SELECT id_producto 
+               FROM producto 
+               WHERE estatus = 0
+             ));
+    `;
+  
+    try {
+      await this.database.executeSql(query, [idVenta]);
+      console.log('Productos sin stock o no disponibles eliminados del carrito.');
+    } catch (error) {
+      console.error('Error al eliminar productos sin stock o no disponibles:', error);
+      throw error;
+    }
+  }
+
+  //calcular precio final 
+  async preciofinal(idVenta: number): Promise<number> {
+    const query = `
+      SELECT SUM(cantidad * subtotal) AS total 
+      FROM detalle 
+      WHERE id_venta = ?;
+    `;
+  
+    try {
+      const res = await this.database.executeSql(query, [idVenta]);
+      if (res.rows.length > 0) {
+        return res.rows.item(0).total || 0;  // Retorna el total calculado o 0 si no hay resultados
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error al calcular el precio final:', error);
+      throw error;
+    }
+  }
+
+  /*
+  //añadir items al carrito
+  async addProductoCarrito(id_usuario: number): Promise<any[]> {
+    return this.database.executeSql('INSERT INTO DETALLE ', [id_usuario]).then(res => {
+      //variable para almacenar el resultado de la consulta
+      let itemsD: Detallesventa[] = [];
+      //verificar si hay registros en la consulta
+      if (res.rows.length > 0) {
+        //se recorren los resultados
+        for (var i = 0; i < res.rows.length; i++) {
+          //se agrega el registro a mi variable (itemsU)
+          itemsD.push({
+            id_detalle: res.rows.item(i).id_detalle,
+            cantidad: res.rows.item(i).cantidad,
+            subtotal: res.rows.item(i).subtotal,
+            id_venta: res.rows.item(i).id_venta,
+            id_producto: res.rows.item(i).id_producto
+          })
+        }
+      }
+      this.listadoDetalle_carrito.next(itemsD as any);
+      return itemsD;
+    })
+  }*/
 
   //quitar items del carrito
 

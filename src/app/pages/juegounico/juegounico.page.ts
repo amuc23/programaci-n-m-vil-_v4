@@ -17,6 +17,7 @@ export class JuegounicoPage implements OnInit {
   arregloresecnas: any = [];
   arregloJuegoUnico: any = {};
   estaEnListaDeseos: boolean = false; // Estado inicial
+  idVentaActiva: number | null = null;
 
   constructor(
     private bd: ManejodbService,
@@ -47,6 +48,49 @@ export class JuegounicoPage implements OnInit {
     });
   }
 
+  async verificarOCrearVenta() {
+    try {
+      this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      if (!this.idUserLogged) {
+        this.alertasService.presentAlert('Error', 'Debes estar logueado para añadir al carrito.');
+        return;
+      }
+  
+      const venta = await this.bd.verificarVentaActiva(this.idUserLogged);
+      console.log('Venta activa encontrada:', venta);
+  
+      if (venta) {
+        this.idVentaActiva = venta;
+      } else {
+        this.idVentaActiva = await this.bd.crearVenta(this.idUserLogged);
+        console.log('Nueva venta creada con ID:', this.idVentaActiva);
+      }
+    } catch (error) {
+      console.error('Error al verificar o crear la venta:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo verificar o crear la venta.');
+    }
+  }
+
+  async agregarAlCarrito() {
+    try {
+      if (!this.idVentaActiva) {
+        this.alertasService.presentAlert('Error', 'No se encontró una venta activa.');
+        return;
+      }
+
+      await this.bd.agregarDetalleVenta(
+        this.idVentaActiva,
+        this.juegoLlego.precio_prod,
+        this.juegoLlego.id_producto
+      );
+
+      this.alertasService.presentAlert('Añadido al Carrito', 'El juego fue añadido correctamente.');
+      console.log(`Juego ${this.juegoLlego.nombre_prod} añadido al carrito.`);
+    } catch (error) {
+      console.error('Error al agregar al carrito:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo añadir al carrito.');
+    }
+  }
   // Verificar si el juego está en la lista de deseos
   async verificarSiEstaEnListaDeseos() {
     this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
