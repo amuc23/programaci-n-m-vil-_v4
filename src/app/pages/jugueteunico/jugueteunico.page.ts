@@ -9,13 +9,12 @@ import { ManejodbService } from 'src/app/services/manejodb.service';
   styleUrls: ['./jugueteunico.page.scss'],
 })
 export class JugueteunicoPage implements OnInit {
-
   jugueteLlego: any;
   laresecna: string = ''; 
   hayResecna: boolean = false;
   idUserLogged!: any;
   arregloresecnas: any = [];
-  estaEnListaDeseos: boolean = false; // Estado inicial
+  estaEnListaDeseos: boolean = false;
 
   constructor(
     private bd: ManejodbService, 
@@ -23,40 +22,65 @@ export class JugueteunicoPage implements OnInit {
     private activedroute: ActivatedRoute, 
     private alertasService: AlertasService
   ) {
-    this.activedroute.queryParams.subscribe(res => {
+    this.activedroute.queryParams.subscribe((res) => {
       if (this.router.getCurrentNavigation()?.extras.state) {
-        this.jugueteLlego = this.router.getCurrentNavigation()?.extras.state?.['jugueteSelect'];
+        this.jugueteLlego = this.router.getCurrentNavigation()?.extras?.state?.['jugueteSelect'];
       }
     });
   }
 
   async ionViewWillEnter() {
     await this.validarSiHayResecna();
-    this.verificarSiEstaEnListaDeseos();
+    await this.verificarSiEstaEnListaDeseos();
   }
 
   ngOnInit() {
-    this.bd.dbState().subscribe(data => {
+    this.bd.dbState().subscribe(async (data) => {
       if (data) {
-        this.fetchJugueteUnico().then(() => {
-          this.obtenerResecnas2();
-        });
+        await this.fetchJugueteUnico();
+        await this.obtenerResecnas2();
       }
     });
   }
 
-  verificarSiEstaEnListaDeseos() {
-    this.estaEnListaDeseos = this.jugueteLlego.enListaDeseos || false;
+  async verificarSiEstaEnListaDeseos() {
+    try {
+      this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      this.estaEnListaDeseos = await this.bd.verificarFav(
+        this.jugueteLlego.id_producto, 
+        this.idUserLogged
+      );
+    } catch (error) {
+      console.error('Error al verificar la lista de deseos:', error);
+    }
   }
 
-  agregarAListaDeseos() {
-    this.estaEnListaDeseos = true;
-    this.alertasService.presentAlert('Añadido a Lista de Deseos', '¡Gracias!');
+  async agregarAListaDeseos() {
+    try {
+      const idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      if (!idUserLogged) {
+        this.alertasService.presentAlert('Error', 'Debes estar logueado para agregar a la lista de deseos.');
+        return;
+      }
+
+      await this.bd.agregarFav(idUserLogged, this.jugueteLlego.id_producto);
+      this.estaEnListaDeseos = true;
+      this.alertasService.presentAlert('Éxito', 'Añadido a la lista de deseos');
+    } catch (error) {
+      console.error('Error al agregar a la lista de deseos:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo añadir a la lista de deseos: ' + JSON.stringify(error));
+    }
   }
 
-  quitarDeListaDeseos() {
-    this.estaEnListaDeseos = false;
-    this.alertasService.presentAlert('Eliminado de Lista de Deseos', '¡Eliminado correctamente!');
+  async quitarDeListaDeseos() {
+    try {
+      await this.bd.quitarFav(this.jugueteLlego.id_producto, this.idUserLogged);
+      this.estaEnListaDeseos = false;
+      this.alertasService.presentAlert('Éxito', 'Eliminado de la lista de deseos');
+    } catch (error) {
+      console.error('Error al eliminar de la lista de deseos:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo eliminar: ' + JSON.stringify(error));
+    }
   }
 
   async validarSiHayResecna() {
@@ -64,22 +88,30 @@ export class JugueteunicoPage implements OnInit {
     const usuarioLogueado = await this.bd.obtenerUsuarioLogueado();
     if (usuarioLogueado) {
       const id_usuario = usuarioLogueado.id_usuario;
-      if (await this.bd.consultarResecnaPorIdProductoYUsuario(this.jugueteLlego.id_producto, id_usuario)) {
-        this.hayResecna = true;
-      }
+      const existeResecna = await this.bd.consultarResecnaPorIdProductoYUsuario(
+        this.jugueteLlego.id_producto, 
+        id_usuario
+      );
+      this.hayResecna = !!existeResecna;
     }
   }
 
   async SubirResecna() {
-    this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
-    if (this.idUserLogged) {
-      await this.bd.agregarResecnas(this.laresecna, this.idUserLogged, this.jugueteLlego.id_producto);
-      this.laresecna = '';
+    try {
+      const idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      if (!idUserLogged) {
+        this.alertasService.presentAlert("Error", "Debes estar logueado para agregar una reseña.");
+        return;
+      }
+
+      await this.bd.agregarResecnas(this.laresecna, idUserLogged, this.jugueteLlego.id_producto);
+      this.laresecna = ''; // Reiniciar la reseña
       this.hayResecna = true;
       await this.obtenerResecnas2();
       await this.fetchJugueteUnico();
-    } else {
-      this.alertasService.presentAlert("Error", "Debes estar logueado para agregar una reseña.");
+    } catch (error) {
+      console.error('Error al subir reseña:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo subir la reseña: ' + JSON.stringify(error));
     }
   }
 
@@ -87,7 +119,8 @@ export class JugueteunicoPage implements OnInit {
     try {
       this.arregloresecnas = await this.bd.obtenerResecnas2(this.jugueteLlego.id_producto);
     } catch (error) {
-      this.alertasService.presentAlert('Error al cargar reseñas', `ERROR: ${error}`);
+      console.error('Error al obtener reseñas:', error);
+      this.alertasService.presentAlert('Error', 'No se pudieron cargar las reseñas: ' + JSON.stringify(error));
     }
   }
 

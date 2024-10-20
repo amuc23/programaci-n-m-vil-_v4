@@ -43,4 +43,6 @@ export class ListadeseosPage implements OnInit {
       this.alertasService.presentAlert('Error', 'No se pudo eliminar: ' + JSON.stringify(error));
     }
   }
+
+  
 }

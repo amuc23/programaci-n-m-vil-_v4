@@ -15,43 +15,23 @@
     <ion-card-content>
       <ion-grid>
 
-        <ion-row *ngFor="let fav of favoritos">
-          <ion-col size="3">
-            <ion-thumbnail>
-              <img [src]="fav.foto_prod" alt="Imagen del producto" />
-            </ion-thumbnail>
-          </ion-col>
-          <ion-col size="6">
-            <h2>{{ fav.nombre_prod }}</h2>
-            <p>{{ fav.precio_prod | currency: 'CLP':'symbol':'1.0-0' }}</p>
-          </ion-col>
-          <ion-col size="3">
-            <ion-button color="danger" (click)="quitarDeListaDeseos(fav.id_producto)">
-              Quitar
-            </ion-button>
-          </ion-col>
-        </ion-row>
-
-        <!-- Producto 1 
-        <ion-row class="product-row">
+        <!-- Recorremos los favoritos -->
+        <ion-row *ngFor="let fav of favoritos" class="product-row">
           <ion-col size="3" class="product-image-col">
             <ion-thumbnail class="product-image">
-              <img src="assets/img/juegos/caratula-hollow.jpeg" alt="Hollow Knight" />
+              <img [src]="fav.foto_prod" alt="{{ fav.nombre_prod }}" />
             </ion-thumbnail>
           </ion-col>
           <ion-col size="6" class="product-info">
-            <h2>Hollow Knight</h2>
-            <p>$15.000</p>
+            <h2>{{ fav.nombre_prod }}</h2>
+            <p>{{ fav.precio_prod | currency: 'CLP':'symbol':'1.0-0' }}</p>
           </ion-col>
           <ion-col size="3" class="button-col">
-            <ion-button size="small" expand="block" fill="solid" color="primary">
-              Ver Producto
-            </ion-button>
-            <ion-button size="small" expand="block" fill="solid" color="danger">
+            <ion-button size="small" expand="block" fill="solid" color="danger" (click)="quitarDeListaDeseos(fav.id_producto)">
               Quitar de Favoritos
             </ion-button>
           </ion-col>
-        </ion-row> -->
+        </ion-row>
 
       </ion-grid>
     </ion-card-content>

@@ -15,7 +15,7 @@ export class ConsolaunicaPage implements OnInit {
   hayResecna: boolean = false;
   idUserLogged!: any;
   arregloresecnas: any = [];
-  estaEnFavoritos: boolean = false; // Estado inicial
+  estaEnFavoritos: boolean = false;
 
   constructor(
     private bd: ManejodbService,
@@ -23,7 +23,7 @@ export class ConsolaunicaPage implements OnInit {
     private activedroute: ActivatedRoute,
     private alertasService: AlertasService
   ) {
-    this.activedroute.queryParams.subscribe(res => {
+    this.activedroute.queryParams.subscribe((res) => {
       if (this.router.getCurrentNavigation()?.extras.state) {
         this.consolaLlego = this.router.getCurrentNavigation()?.extras?.state?.['consolaSelect'];
       }
@@ -32,31 +32,56 @@ export class ConsolaunicaPage implements OnInit {
 
   async ionViewWillEnter() {
     await this.validarSiHayResecna();
-    this.verificarSiEstaEnFavoritos(); // Verificar si está en favoritos
+    await this.verificarSiEstaEnFavoritos();
   }
 
   ngOnInit() {
-    this.bd.dbState().subscribe(data => {
+    this.bd.dbState().subscribe(async (data) => {
       if (data) {
-        this.fetchConsolaUnica().then(() => {
-          this.obtenerResecnas2();
-        });
+        await this.fetchConsolaUnica();
+        await this.obtenerResecnas2();
       }
     });
   }
 
-  verificarSiEstaEnFavoritos() {
-    this.estaEnFavoritos = this.consolaLlego.favorito || false;
+  async verificarSiEstaEnFavoritos() {
+    try {
+      this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      this.estaEnFavoritos = await this.bd.verificarFav(
+        this.consolaLlego.id_producto,
+        this.idUserLogged
+      );
+    } catch (error) {
+      console.error('Error al verificar si está en favoritos:', error);
+    }
   }
 
-  agregarAFavoritos() {
-    this.estaEnFavoritos = true;
-    this.alertasService.presentAlert('Añadido a Lista de Deseos', '¡Gracias!');
+  async agregarAFavoritos() {
+    try {
+      const idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      if (!idUserLogged) {
+        this.alertasService.presentAlert('Error', 'Debes estar logueado para agregar a favoritos.');
+        return;
+      }
+
+      await this.bd.agregarFav(idUserLogged, this.consolaLlego.id_producto);
+      this.estaEnFavoritos = true;
+      this.alertasService.presentAlert('Éxito', 'Añadido a favoritos');
+    } catch (error) {
+      console.error('Error al agregar a favoritos:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo añadir a favoritos: ' + JSON.stringify(error));
+    }
   }
 
-  quitarDeFavoritos() {
-    this.estaEnFavoritos = false;
-    this.alertasService.presentAlert('Quitado de Favoritos', '¡Eliminado correctamente!');
+  async quitarDeFavoritos() {
+    try {
+      await this.bd.quitarFav(this.consolaLlego.id_producto, this.idUserLogged);
+      this.estaEnFavoritos = false;
+      this.alertasService.presentAlert('Éxito', 'Eliminado de favoritos');
+    } catch (error) {
+      console.error('Error al quitar de favoritos:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo eliminar de favoritos: ' + JSON.stringify(error));
+    }
   }
 
   async validarSiHayResecna() {
@@ -64,22 +89,30 @@ export class ConsolaunicaPage implements OnInit {
     const usuarioLogueado = await this.bd.obtenerUsuarioLogueado();
     if (usuarioLogueado) {
       const id_usuario = usuarioLogueado.id_usuario;
-      if (await this.bd.consultarResecnaPorIdProductoYUsuario(this.consolaLlego.id_producto, id_usuario)) {
-        this.hayResecna = true;
-      }
+      const existeResecna = await this.bd.consultarResecnaPorIdProductoYUsuario(
+        this.consolaLlego.id_producto,
+        id_usuario
+      );
+      this.hayResecna = !!existeResecna;
     }
   }
 
   async SubirResecna() {
-    this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
-    if (this.idUserLogged) {
-      await this.bd.agregarResecnas(this.laresecna, this.idUserLogged, this.consolaLlego.id_producto);
+    try {
+      const idUserLogged = await this.bd.obtenerIdUsuarioLogueado();
+      if (!idUserLogged) {
+        this.alertasService.presentAlert('Error', 'Debes estar logueado para subir una reseña.');
+        return;
+      }
+
+      await this.bd.agregarResecnas(this.laresecna, idUserLogged, this.consolaLlego.id_producto);
       this.laresecna = '';
       this.hayResecna = true;
       await this.obtenerResecnas2();
       await this.fetchConsolaUnica();
-    } else {
-      this.alertasService.presentAlert("Error", "Debes estar logueado para agregar una reseña.");
+    } catch (error) {
+      console.error('Error al subir reseña:', error);
+      this.alertasService.presentAlert('Error', 'No se pudo subir la reseña: ' + JSON.stringify(error));
     }
   }
 
@@ -87,7 +120,8 @@ export class ConsolaunicaPage implements OnInit {
     try {
       this.arregloresecnas = await this.bd.obtenerResecnas2(this.consolaLlego.id_producto);
     } catch (error) {
-      this.alertasService.presentAlert('Error al cargar reseñas', `ERROR: ${error}`);
+      console.error('Error al obtener reseñas:', error);
+      this.alertasService.presentAlert('Error', 'No se pudieron cargar las reseñas: ' + JSON.stringify(error));
     }
   }
 
