@@ -1,39 +1,28 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/" text="atras" icon="arrow-back" [routerLink]="['/perfil']"></ion-back-button>
+      <ion-back-button defaultHref="/" text="Atrás" icon="arrow-back" [routerLink]="['/perfil']"></ion-back-button>
     </ion-buttons>
     <ion-title>Mis Reseñas</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-card>
+  <ion-card *ngFor="let resecna of resecnas" class="reseña-card">
     <ion-card-header>
-      <ion-card-title>Mis Reseñas</ion-card-title>
+      <ion-card-title>{{ resecna.nombre_prod }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list *ngIf="resecnas.length > 0; else noResenas">
-
-        <ion-item *ngFor="let resecna of resecnas">
-          <ion-label>
-            <!-- Nombre del Producto y Fecha -->
-            <h2>{{ resecna.nombre_prod }} </h2>
-
-            <!-- Descripción -->
-            <p>{{ resecna.text_resecna }}</p>
-          </ion-label>
-
-          <ion-button color="danger" (click)="eliminarResena(resecna.id_resecna)">
-            Eliminar
-          </ion-button>
-        </ion-item>
-
-      </ion-list>
-
-      <ng-template #noResenas>
-        <ion-card-content>No tienes reseñas registradas.</ion-card-content>
-      </ng-template>
+      <p class="reseña-texto">{{ resecna.text_resecna }}</p>
+      <ion-button color="danger" expand="block" class="boton-eliminar" (click)="eliminarResena(resecna.id_resecna)">
+        Eliminar
+      </ion-button>
     </ion-card-content>
   </ion-card>
+
+  <ng-template #noResenas>
+    <ion-card>
+      <ion-card-content>No tienes reseñas registradas.</ion-card-content>
+    </ion-card>
+  </ng-template>
 </ion-content>
