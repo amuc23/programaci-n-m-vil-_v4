@@ -1489,14 +1489,14 @@ obtenerIdUsuarioLogueado() {
       WHERE id_venta = ? AND id_producto = ?;
     `;
   
-    const queryEliminar = `
-      DELETE FROM detalle 
-      WHERE id_venta = ? AND id_producto = ?;
-    `;
-  
     const queryRestar = `
       UPDATE detalle 
       SET cantidad_d = cantidad_d - 1 
+      WHERE id_venta = ? AND id_producto = ?;
+    `;
+  
+    const queryEliminar = `
+      DELETE FROM detalle 
       WHERE id_venta = ? AND id_producto = ?;
     `;
   
@@ -1504,18 +1504,20 @@ obtenerIdUsuarioLogueado() {
       const res = await this.database.executeSql(queryVerificar, [idVenta, idProducto]);
       if (res.rows.length > 0) {
         const cantidad = res.rows.item(0).cantidad_d;
+  
         if (cantidad > 1) {
           await this.database.executeSql(queryRestar, [idVenta, idProducto]);
         } else {
           await this.database.executeSql(queryEliminar, [idVenta, idProducto]);
         }
       }
-      await this.preciofinal(idVenta);  // Actualiza el total después del cambio
     } catch (error) {
       console.error('Error al restar cantidad:', error);
       throw error;
     }
   }
+
+
 
   //ejecutar la venta
   public async confirmarCompra(idVenta: number): Promise<void> {

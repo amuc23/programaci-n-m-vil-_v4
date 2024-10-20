@@ -79,10 +79,11 @@ export class CarritoPage implements OnInit {
   }
 
   async decrementarCantidad(producto: any) {
-    if (producto.cantidad > 0) {
-      producto.cantidad_d--;
+    if (producto.cantidad_d > 0) {
+      producto.cantidad_d--;  // Reducimos cantidad en la vista.
       await this.bd.restarCantidad(this.idVentaActiva, producto.id_producto);
-      this.actualizarPrecioTotal();
+      await this.cargarProductos();  // Recargar productos después de modificar.
+      this.actualizarPrecioTotal();  // Actualizamos el total.
     }
   }
 
