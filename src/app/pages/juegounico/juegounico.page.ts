@@ -18,7 +18,7 @@ export class JuegounicoPage implements OnInit {
   arregloJuegoUnico: any = {};
   idVentaActiva: number | null = null;
   estaEnListaDeseos: boolean = false; // Estado inicial
-  estaEnCarrito: boolean = false; // Estado inicial
+  estaEnCarrito!: boolean; // Estado inicial
 
   constructor(
     private bd: ManejodbService,
@@ -36,6 +36,7 @@ export class JuegounicoPage implements OnInit {
   async ionViewWillEnter() {
     await this.validarSiHayResecna(); // Verifica si hay reseña
     await this.verificarSiEstaEnListaDeseos(); // Verifica si está en la lista de deseos
+    await this.validarSiEstaEnCarrito();
   }
 
   ngOnInit() {
@@ -44,6 +45,7 @@ export class JuegounicoPage implements OnInit {
         this.fetchJuegoUnico().then(() => {
           this.obtenerResecnas2(); // Cargar reseñas
           this.verificarSiEstaEnListaDeseos();
+          this.validarSiEstaEnCarrito();
         });
       }
     });
@@ -79,13 +81,17 @@ export class JuegounicoPage implements OnInit {
         this.alertasService.presentAlert('Error', 'No se encontró una venta activa.');
         return;
       }
+      await this.validarSiEstaEnCarrito();
+      if (this.estaEnCarrito === true){
+        return this.alertasService.presentAlert("ERROR","EL PRODUCTO YA ESTA EN EL CARRITO");
+      }
       
       await this.bd.agregarDetalleVenta(
         this.idVentaActiva,
         this.juegoLlego.precio_prod,
         this.juegoLlego.id_producto
       );
-
+      
       await this.bd.preciofinal(this.idVentaActiva);
       console.log(`Juego ${this.juegoLlego.nombre_prod} añadido al carrito.`);
       this.alertasService.presentAlert('Añadido al Carrito', 'El juego fue añadido correctamente.');
@@ -96,6 +102,21 @@ export class JuegounicoPage implements OnInit {
       this.alertasService.presentAlert('Error', 'No se pudo añadir al carrito.');
     }
   }
+
+  async validarSiEstaEnCarrito() {
+    try {
+      this.estaEnCarrito = await this.bd.consultarProdsCarro(this.juegoLlego.id_producto, this.idVentaActiva);
+    } catch (error) {
+      console.error('Error al verificar si el producto está en el carrito:', error);
+    }
+  }
+
+  async comprant(){
+    await this.bd.restarCantidad(this.idVentaActiva,this.juegoLlego.id_producto);
+    await this.validarSiEstaEnCarrito();
+    this.alertasService.presentAlert("EXITO","Producto eliminado del carrito");
+  }
+
   // Verificar si el juego está en la lista de deseos
   async verificarSiEstaEnListaDeseos() {
     this.idUserLogged = await this.bd.obtenerIdUsuarioLogueado();

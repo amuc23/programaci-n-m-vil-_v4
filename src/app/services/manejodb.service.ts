@@ -851,7 +851,25 @@ async eliminarUsuarios(idU: any) {
     }
 }
 
-  ////////--JUEGOS
+
+
+  //------------------------------------------------------------------------------
+
+
+  async consultarProdsCarro(id_producto: any, idVenta: any): Promise<boolean> {
+    try {
+      const query = 'SELECT * FROM detalle WHERE id_producto = ? AND id_venta = ?';
+      const data = await this.database.executeSql(query, [id_producto, idVenta]);
+      return data.rows.length > 0; // Devuelve true si encuentra el producto
+    } catch (error) {
+      console.error('Error al consultar el producto en el carrito:', error);
+      return false; // En caso de error, devolvemos false
+    }
+  }
+  
+
+
+  ////////--JUEGOS/////////////////////////////////////////////////////////////
   async consultarJuegos() {
     try {
       const resp = await this.database.executeSql('SELECT id_producto, nombre_prod, precio_prod, stock_prod, descripcion_prod, foto_prod, estatus, id_categoria FROM producto WHERE id_categoria = 1', []);
