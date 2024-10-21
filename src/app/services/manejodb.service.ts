@@ -1464,6 +1464,8 @@ obtenerIdUsuarioLogueado() {
     }
   }
 
+  
+
   //añadir mas stock
   async agregarCantidad(idVenta: any, idProducto: any): Promise<void> {
     const query = `
@@ -1520,15 +1522,17 @@ obtenerIdUsuarioLogueado() {
 
 
   //ejecutar la venta
-  async confirmarCompra(idVenta: any, idUser: any): Promise<void> {
+  async confirmarCompra(idVenta: any, idUser: any, total: any): Promise<void> {
     const query = `
       UPDATE venta 
-      SET id_estado = 2 
+      SET 
+        total = ?,
+        id_estado = 2 
       WHERE id_venta = ?;
     `;
   
     try {
-      await this.database.executeSql(query, [idVenta]);
+      await this.database.executeSql(query, [total,idVenta]);
       this.alertasService.presentAlert("¡Compra Exitosa!","¡GRACIAS!");
       await this.verificarOCrearVenta(idUser);
     } catch (error) {
@@ -1578,7 +1582,61 @@ obtenerIdUsuarioLogueado() {
       throw error;
     }
   }
+  ///////////////////////////////////////////////////////////////////////////////////
+
+  //////////////////////////////CRUD RETIROS////////////////////////////////////////
+
+  //listado de retiros
+  async consultarRetiros(idU: any) {
+    const query = `
+      SELECT 
+        v.id_venta,
+        v.fecha_venta,
+        v.total,
+        v.estado_retiro,
+        u.username AS nombre_usuario,  -- Cambiamos el nombre del campo a username
+        v.id_usuario,
+        v.id_estado
+      FROM 
+        venta v
+      INNER JOIN 
+        usuario u ON v.id_usuario = u.id_usuario
+      WHERE 
+        v.id_estado = 2 AND v.id_usuario = ?;
+    `;
   
+    try {
+      const res = await this.database.executeSql(query, [idU]);
+      
+      // Variable para almacenar los resultados de la consulta
+      let itemsV: Venta[] = [];
+  
+      // Verificar si hay registros
+      if (res.rows.length > 0) {
+        for (let i = 0; i < res.rows.length; i++) {
+          // Agregar cada registro a la lista
+          itemsV.push({
+            id_venta: res.rows.item(i).id_venta,
+            fecha_venta: res.rows.item(i).fecha_venta,
+            total: res.rows.item(i).total,
+            estado_retiro: res.rows.item(i).estado_retiro,
+            username: res.rows.item(i).username,  
+            id_usuario: res.rows.item(i).id_usuario,
+            id_estado: res.rows.item(i).id_estado
+          });
+        }
+      }
+  
+      // Emitir los resultados mediante el observable
+      this.listadoventa.next(itemsV as any);
+      return itemsV;
+    } catch (error) {
+      console.error('Error al consultar retiros:', error);
+      throw error;
+    }
+  }
+  
+
 
   //////////////////////////////////////////////////////////////////////////////////
 

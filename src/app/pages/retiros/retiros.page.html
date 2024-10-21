@@ -16,44 +16,25 @@
       <ion-title size="large">Retiros</ion-title>
     </ion-toolbar>
   </ion-header>
-
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>Usuario: Carlos Méndez</ion-card-title>
-      <ion-card-subtitle>Monto Pagado: $250.000</ion-card-subtitle>
-    </ion-card-header>
-  </ion-card>
-
   <ion-list>
-    <ion-item lines="none">
-      <ion-thumbnail slot="start" class="product-image">
-        <img src="assets/img/juguetes/Batman-juguete.jpg" alt="Juguete" />
-      </ion-thumbnail>
-      <ion-label class="product-label">
-        <h1>Batman vs Superman - Figura de Colección</h1>
-      </ion-label>
-    </ion-item>
-
-    <ion-item lines="none">
-      <ion-thumbnail slot="start" class="product-image">
-        <img src="assets/img/consolas/2dsXL-consola.jpeg" alt="Consola" />
-      </ion-thumbnail>
-      <ion-label class="product-label">
-        <h1>Nintendo 3DS</h1>
-      </ion-label>
-    </ion-item>
-
-    <ion-item lines="none">
-      <ion-thumbnail slot="start" class="product-image">
-        <img src="assets/img/juegos/caratula-hollow.jpeg" alt="Videojuego" />
-      </ion-thumbnail>
-      <ion-label class="product-label">
-        <h1>Hollow Knight</h1>
-      </ion-label>
-    </ion-item>
+    <ion-card *ngFor="let retir of arregloVenta">
+      <ion-card-header>
+        <ion-card-title>Usuario: {{ retir.username }}</ion-card-title>
+        <ion-card-subtitle>Monto Total: {{ retir.total }}</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Fecha: {{ retir.fecha_venta }}</p> <!-- Cambiado rt -> retir -->
+        <!-- Condición para mostrar el estado del retiro -->
+        <p *ngIf="retir.estado_retiro === 0" style="color: green; font-weight: bold;">
+          Listo para retirar
+        </p>
+        <p *ngIf="retir.estado_retiro === 1" style="color: red; font-weight: bold;">
+          Producto retirado
+        </p>
+        <div class="qr-container">
+          <img src="assets/img/qr.jpg" alt="QR Code" />
+        </div>
+      </ion-card-content>
+    </ion-card>
   </ion-list>
-
-  <div class="qr-container">
-    <img src="assets/img/qr.jpg" alt="QR Code" />
-  </div>
 </ion-content>

@@ -68,8 +68,10 @@ export class CarritoPage implements OnInit {
     }
   }
   
-  continuar() {
+  async continuar() {
     this.mostrarSinStock = false;
+    await this.actualizarPrecioTotal();  // Actualizamos el total.
+    await this.cargarProductos();
   }
 
   async incrementarCantidad(producto: any) {
@@ -106,7 +108,7 @@ export class CarritoPage implements OnInit {
 
   async COMPRAAAAR(){
     const idUsuario = await this.bd.obtenerIdUsuarioLogueado();
-    await this.bd.confirmarCompra(this.idVentaActiva, idUsuario);
+    await this.bd.confirmarCompra(this.idVentaActiva, idUsuario, this.totalVENTA);
     await this.actualizarPrecioTotal();  // Actualizamos el total.
     await this.cargarProductos();
   }
