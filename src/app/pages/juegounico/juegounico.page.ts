@@ -9,15 +9,15 @@ import { ManejodbService } from 'src/app/services/manejodb.service';
   styleUrls: ['./juegounico.page.scss'],
 })
 export class JuegounicoPage implements OnInit {
-  juegoLlego: any;
+  juegoLlego: any;     //
   fotoResena: string | null = null;
-  hayResecna: boolean = false;
-  laresecna: string = ''; // Inicializar la reseña
-  idUserLogged!: any;
-  arregloresecnas: any = [];
-  arregloJuegoUnico: any = {};
+  hayResecna: boolean = false;  //
+  laresecna: string = ''; // Inicializar la reseña   //
+  idUserLogged!: any;  //
+  arregloresecnas: any = [];  //
+  arregloJuegoUnico: any = {}; 
   idVentaActiva: number | null = null;
-  estaEnListaDeseos: boolean = false; // Estado inicial
+  estaEnListaDeseos: boolean = false; // Estado inicial //
   estaEnCarrito!: boolean; // Estado inicial
 
   constructor(
@@ -69,7 +69,6 @@ export class JuegounicoPage implements OnInit {
         console.log('Nueva venta creada con ID:', this.idVentaActiva);
       }
     } catch (error) {
-      console.error('Error al verificar o crear la venta:', error);
       this.alertasService.presentAlert('Error', 'No se pudo verificar o crear la venta.');
     }
   }
@@ -85,7 +84,7 @@ export class JuegounicoPage implements OnInit {
       if (this.estaEnCarrito === true){
         return this.alertasService.presentAlert("ERROR","EL PRODUCTO YA ESTA EN EL CARRITO");
       }
-      
+
       await this.bd.agregarDetalleVenta(
         this.idVentaActiva,
         this.juegoLlego.precio_prod,
